@@ -2,6 +2,21 @@ import pytest
 from textual.app import App, ComposeResult
 from textual.widgets import Input
 from bashmage.widgets.search_bar import SearchBar
+from textual.widgets import ListView
+from bashmage.storage import Command
+from bashmage.widgets.command_list import CommandList
+
+
+COMMANDS = [
+    Command("git-status", "Show working tree status", "git status --short"),
+    Command("docker-up", "Start docker services", "docker compose up -d"),
+    Command("kill-port", "Kill process on a port", "kill -9 $(lsof -t -i:{port})"),
+]
+
+
+class _ListApp(App):
+    def compose(self) -> ComposeResult:
+        yield CommandList(COMMANDS)
 
 
 class _SearchApp(App):
@@ -25,3 +40,60 @@ async def test_search_bar_clear_empties_input():
         app.query_one(SearchBar).clear()
         await pilot.pause()
         assert app.query_one(Input).value == ""
+
+
+async def test_command_list_shows_all_commands_initially():
+    app = _ListApp()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        items = app.query_one(ListView).children
+        assert len(items) == 3
+
+
+async def test_command_list_filter_reduces_items():
+    app = _ListApp()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.query_one(CommandList).filter("git")
+        await pilot.pause()
+        items = app.query_one(ListView).children
+        assert len(items) == 1
+
+
+async def test_command_list_filter_matches_description():
+    app = _ListApp()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.query_one(CommandList).filter("docker")
+        await pilot.pause()
+        items = app.query_one(ListView).children
+        assert len(items) == 1
+
+
+async def test_command_list_filter_empty_string_shows_all():
+    app = _ListApp()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.query_one(CommandList).filter("git")
+        await pilot.pause()
+        app.query_one(CommandList).filter("")
+        await pilot.pause()
+        items = app.query_one(ListView).children
+        assert len(items) == 3
+
+
+async def test_command_list_highlighted_returns_correct_command():
+    highlighted = []
+
+    class _TrackApp(App):
+        def compose(self) -> ComposeResult:
+            yield CommandList(COMMANDS)
+
+        def on_command_list_highlighted(self, event: CommandList.Highlighted) -> None:
+            highlighted.append(event.command)
+
+    app = _TrackApp()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        assert len(highlighted) > 0
+        assert highlighted[-1].name == "git-status"
