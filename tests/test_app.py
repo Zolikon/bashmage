@@ -97,3 +97,23 @@ async def test_command_list_highlighted_returns_correct_command():
         await pilot.pause()
         assert len(highlighted) > 0
         assert highlighted[-1].name == "git-status"
+
+
+async def test_command_list_selected_returns_correct_command():
+    selected = []
+
+    class _SelectApp(App):
+        def compose(self) -> ComposeResult:
+            yield CommandList(COMMANDS)
+
+        def on_command_list_selected(self, event: CommandList.Selected) -> None:
+            selected.append(event.command)
+            self.exit()
+
+    app = _SelectApp()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.press("enter")
+        await pilot.pause()
+    assert len(selected) == 1
+    assert selected[0].name == "git-status"
