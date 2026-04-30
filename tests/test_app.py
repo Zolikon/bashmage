@@ -5,6 +5,7 @@ from bashmage.widgets.search_bar import SearchBar
 from textual.widgets import ListView
 from bashmage.storage import Command
 from bashmage.widgets.command_list import CommandList
+from bashmage.widgets.detail_panel import DetailPanel
 
 
 COMMANDS = [
@@ -117,3 +118,20 @@ async def test_command_list_selected_returns_correct_command():
         await pilot.pause()
     assert len(selected) == 1
     assert selected[0].name == "git-status"
+
+
+class _DetailApp(App):
+    def compose(self) -> ComposeResult:
+        yield DetailPanel()
+
+
+async def test_detail_panel_show_updates_content():
+    cmd = Command("kill-port", "Kill port", "kill -9 $(lsof -t -i:{port})")
+    app = _DetailApp()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.query_one(DetailPanel).show(cmd)
+        await pilot.pause()
+        from textual.widgets import Static
+        content = str(app.query_one("#command-preview", Static).render())
+        assert "{port}" in content
