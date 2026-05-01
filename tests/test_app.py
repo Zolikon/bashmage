@@ -135,3 +135,5 @@ async def test_detail_panel_show_updates_content():
         from textual.widgets import Static
         content = str(app.query_one("#command-preview", Static).render())
         assert "{port}" in content
+
+
