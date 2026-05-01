@@ -10,16 +10,23 @@ def main() -> None:
         print(f"bashmage: error loading commands: {e}", file=sys.stderr)
         sys.exit(1)
 
-    output_stream = sys.stdout
-    if not sys.stdout.isatty():
-        tty = open("/dev/tty", "w")
-        sys.stdout = tty
-        sys.stderr = tty
+    saved_stdout = sys.stdout
+    saved_stderr = sys.stderr
+    tty_file = None
 
-    app = BashMageApp(commands)
-    result = app.run()
+    try:
+        if not sys.stdout.isatty():
+            tty_file = open("/dev/tty", "w")
+            sys.stdout = tty_file
+            sys.stderr = tty_file
 
-    sys.stdout = output_stream
+        app = BashMageApp(commands)
+        result = app.run()
+    finally:
+        sys.stdout = saved_stdout
+        sys.stderr = saved_stderr
+        if tty_file is not None:
+            tty_file.close()
 
     if result is not None:
         print(result)
