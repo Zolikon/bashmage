@@ -8,9 +8,16 @@ _ZSH_INIT = """\
 # BashMage shell integration (zsh)
 # Add to ~/.zshrc:  eval "$(bashmage --init)"
 _bashmage_widget() {
-  local cmd
-  cmd=$(bashmage)
-  [[ $? -eq 0 && -n "$cmd" ]] || return
+  local tmp ret cmd saved_stty
+  tmp=$(mktemp) || return
+  saved_stty=$(stty -g 2>/dev/null)
+  bashmage >"$tmp" </dev/tty
+  ret=$?
+  [[ -n "$saved_stty" ]] && stty "$saved_stty" 2>/dev/null
+  cmd=$(<"$tmp")
+  rm -f "$tmp"
+  zle reset-prompt
+  [[ $ret -eq 0 && -n "$cmd" ]] || return
   BUFFER="$cmd"
   CURSOR=${#BUFFER}
   zle redisplay
