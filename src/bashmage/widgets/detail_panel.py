@@ -21,3 +21,6 @@ class DetailPanel(Widget):
 
     def show(self, command: Command) -> None:
         self.query_one("#command-preview", Static).update(command.command)
+
+    def clear(self) -> None:
+        self.query_one("#command-preview", Static).update("")

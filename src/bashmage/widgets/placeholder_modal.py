@@ -64,6 +64,14 @@ class PlaceholderModal(ModalScreen[str | None]):
             self._try_confirm()
 
     def action_confirm(self) -> None:
+        placeholders = self._command.placeholders
+        for i, placeholder in enumerate(placeholders):
+            widget = self.query_one(f"#input-{placeholder}", Input)
+            if widget is self.focused:
+                if i + 1 < len(placeholders):
+                    self.query_one(f"#input-{placeholders[i + 1]}", Input).focus()
+                    return
+                break
         self._try_confirm()
 
     def action_cancel(self) -> None:
@@ -73,8 +81,5 @@ class PlaceholderModal(ModalScreen[str | None]):
         values: dict[str, str] = {}
         for placeholder in self._command.placeholders:
             widget = self.query_one(f"#input-{placeholder}", Input)
-            if not widget.value.strip():
-                widget.focus()
-                return
             values[placeholder] = widget.value.strip()
         self.dismiss(self._command.fill(values))

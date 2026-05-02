@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/Users/Zoltan_Pozsonyi/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/skills/brainstorming/scripts/start-server.sh *)",
+      "Bash(git checkout *)",
+      "Bash(git -C /Users/Zoltan_Pozsonyi/work/bashmage log --oneline)",
+      "Bash(git -C /Users/Zoltan_Pozsonyi/work/bashmage branch)",
+      "Bash(pip install *)",
+      "Bash(git *)",
+      "Bash(pip show *)",
+      "Bash(pytest *)",
+      "Bash(python *)",
+      "Bash(python3 *)",
+      "Bash(uv tool *)"
+    ]
+  }
+}

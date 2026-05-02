@@ -77,21 +77,25 @@ def main() -> None:
 
     saved_stdout = sys.stdout
     saved_stderr = sys.stderr
-    tty_file = None
+    saved_stdout_fd = None
 
     try:
         if not sys.stdout.isatty():
-            tty_file = open("/dev/tty", "w")
-            sys.stdout = tty_file
-            sys.stderr = tty_file
+            tty_fd = os.open("/dev/tty", os.O_RDWR)
+            saved_stdout_fd = os.dup(1)
+            os.dup2(tty_fd, 1)
+            os.close(tty_fd)
+            sys.stdout = open(1, "w", closefd=False)
+            sys.stderr = sys.stdout
 
         app = BashMageApp(commands)
         result = app.run()
     finally:
         sys.stdout = saved_stdout
         sys.stderr = saved_stderr
-        if tty_file is not None:
-            tty_file.close()
+        if saved_stdout_fd is not None:
+            os.dup2(saved_stdout_fd, 1)
+            os.close(saved_stdout_fd)
 
     if result is not None:
         print(result)

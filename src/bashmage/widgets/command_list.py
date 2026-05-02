@@ -32,7 +32,7 @@ class CommandList(Widget):
     """
 
     class Highlighted(Message):
-        def __init__(self, command: Command) -> None:
+        def __init__(self, command: Command | None) -> None:
             super().__init__()
             self.command = command
 
@@ -45,6 +45,7 @@ class CommandList(Widget):
         super().__init__()
         self._all_commands = commands
         self._filtered = list(commands)
+        self._current_command: Command | None = commands[0] if commands else None
 
     def compose(self) -> ComposeResult:
         yield ListView(*[CommandItem(c) for c in self._all_commands])
@@ -71,17 +72,27 @@ class CommandList(Widget):
             return True
 
         self._filtered = [c for c in self._all_commands if not tokens or matches(c)]
+        if self._filtered:
+            self._current_command = self._filtered[0]
+        else:
+            self._current_command = None
         lv = self.query_one(ListView)
         lv.clear()
         if self._filtered:
             for cmd in self._filtered:
                 lv.append(CommandItem(cmd))
+            self.post_message(self.Highlighted(self._filtered[0]))
         else:
             msg = self.NO_MATCH_MESSAGE if tokens else self.EMPTY_MESSAGE
             lv.append(ListItem(Label(f"[dim]{msg}[/dim]")))
+            self.post_message(self.Highlighted(None))
+
+    def get_highlighted_command(self) -> Command | None:
+        return self._current_command
 
     def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:
-        if isinstance(event.item, CommandItem):
+        if isinstance(event.item, CommandItem) and event.item.command in self._filtered:
+            self._current_command = event.item.command
             self.post_message(self.Highlighted(event.item.command))
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
