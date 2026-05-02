@@ -1,6 +1,6 @@
 import pytest
 from textual.app import App, ComposeResult
-from textual.widgets import Input
+from textual.widgets import Input, Label
 from bashmage.widgets.search_bar import SearchBar
 from textual.widgets import ListView
 from bashmage.storage import Command
@@ -277,4 +277,35 @@ async def test_command_list_filter_command_without_shortcut_still_matches_by_nam
         assert len(items) == 1
         assert items[0].command.name == "kill-port"
 
+
+async def test_command_item_renders_shortcut_after_name():
+    cmd = Command("switch-branch", "Switch git branch", "git checkout {branch}", shortcut="sw")
+
+    class _ItemApp(App):
+        def compose(self) -> ComposeResult:
+            yield CommandList([cmd])
+
+    app = _ItemApp()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        label = app.query_one(CommandItem).query_one(Label)
+        rendered = str(label.render())
+        assert "switch-branch" in rendered
+        assert "[sw]" in rendered
+
+
+async def test_command_item_no_shortcut_renders_name_only():
+    cmd = Command("git-status", "Show status", "git status")
+
+    class _ItemApp(App):
+        def compose(self) -> ComposeResult:
+            yield CommandList([cmd])
+
+    app = _ItemApp()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        label = app.query_one(CommandItem).query_one(Label)
+        rendered = str(label.render())
+        assert "git-status" in rendered
+        assert "[" not in rendered
 

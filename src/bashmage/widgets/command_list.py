@@ -12,7 +12,12 @@ class CommandItem(ListItem):
         self.command = command
 
     def compose(self) -> ComposeResult:
-        yield Label(f"{self.command.name}\n[dim]{self.command.description}[/dim]")
+        name_part = (
+            f"{self.command.name} [bold][[{self.command.shortcut}]][/bold]"
+            if self.command.shortcut
+            else self.command.name
+        )
+        yield Label(f"{name_part}\n[dim]{self.command.description}[/dim]")
 
 
 class CommandList(Widget):
