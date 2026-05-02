@@ -78,3 +78,58 @@ def test_load_commands_empty_file_returns_empty_list(tmp_path):
     with patch("bashmage.storage.CONFIG_PATH", config):
         commands = load_commands()
     assert commands == []
+
+
+def test_tags_parsed_from_toml(tmp_path):
+    config = tmp_path / "commands.toml"
+    config.write_text("""\
+[[commands]]
+name = "git-status"
+description = "Show status"
+command = "git status"
+tags = "git,status"
+""")
+    with patch("bashmage.storage.CONFIG_PATH", config):
+        commands = load_commands()
+    assert commands[0].tags == ["git", "status"]
+
+
+def test_tags_default_to_empty_when_absent(tmp_path):
+    config = tmp_path / "commands.toml"
+    config.write_text("""\
+[[commands]]
+name = "git-status"
+description = "Show status"
+command = "git status"
+""")
+    with patch("bashmage.storage.CONFIG_PATH", config):
+        commands = load_commands()
+    assert commands[0].tags == []
+
+
+def test_shortcut_parsed_from_toml(tmp_path):
+    config = tmp_path / "commands.toml"
+    config.write_text("""\
+[[commands]]
+name = "switch-branch"
+shortcut = "sw"
+description = "Switch git branch"
+command = "git checkout {branch}"
+tags = "git"
+""")
+    with patch("bashmage.storage.CONFIG_PATH", config):
+        commands = load_commands()
+    assert commands[0].shortcut == "sw"
+
+
+def test_shortcut_defaults_to_none_when_absent(tmp_path):
+    config = tmp_path / "commands.toml"
+    config.write_text("""\
+[[commands]]
+name = "git-status"
+description = "Show status"
+command = "git status"
+""")
+    with patch("bashmage.storage.CONFIG_PATH", config):
+        commands = load_commands()
+    assert commands[0].shortcut is None
