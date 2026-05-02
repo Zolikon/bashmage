@@ -48,18 +48,31 @@ class CommandList(Widget):
     NO_MATCH_MESSAGE = "(no matches)"
 
     def filter(self, query: str) -> None:
-        q = query.lower()
-        self._filtered = [
-            c for c in self._all_commands
-            if not q or q in c.name.lower() or q in c.description.lower()
-        ]
+        tokens = query.lower().split()
+        text_tokens = [t for t in tokens if not t.startswith("#")]
+        tag_tokens = [t[1:] for t in tokens if t.startswith("#") and len(t) > 1]
+
+        def matches(c: Command) -> bool:
+            for t in text_tokens:
+                if (
+                    t not in c.name.lower()
+                    and t not in c.description.lower()
+                    and (c.shortcut is None or t not in c.shortcut.lower())
+                ):
+                    return False
+            for t in tag_tokens:
+                if not any(t in tag.lower() for tag in c.tags):
+                    return False
+            return True
+
+        self._filtered = [c for c in self._all_commands if not tokens or matches(c)]
         lv = self.query_one(ListView)
         lv.clear()
         if self._filtered:
             for cmd in self._filtered:
                 lv.append(CommandItem(cmd))
         else:
-            msg = self.NO_MATCH_MESSAGE if q else self.EMPTY_MESSAGE
+            msg = self.NO_MATCH_MESSAGE if tokens else self.EMPTY_MESSAGE
             lv.append(ListItem(Label(f"[dim]{msg}[/dim]")))
 
     def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:

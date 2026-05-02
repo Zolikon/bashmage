@@ -4,21 +4,32 @@ from textual.widgets import Input
 from bashmage.widgets.search_bar import SearchBar
 from textual.widgets import ListView
 from bashmage.storage import Command
-from bashmage.widgets.command_list import CommandList
+from bashmage.widgets.command_list import CommandItem, CommandList
 from bashmage.widgets.detail_panel import DetailPanel
 from bashmage.app import BashMageApp
 
 
 COMMANDS = [
-    Command("git-status", "Show working tree status", "git status --short"),
-    Command("docker-up", "Start docker services", "docker compose up -d"),
-    Command("kill-port", "Kill process on a port", "kill -9 $(lsof -t -i:{port})"),
+    Command("git-status", "Show working tree status", "git status --short", tags=["git", "status"]),
+    Command("docker-up", "Start docker services", "docker compose up -d", tags=["docker"]),
+    Command("kill-port", "Kill process on a port", "kill -9 $(lsof -t -i:{port})", tags=["network", "ports"]),
+]
+
+COMMANDS_WITH_SHORTCUTS = [
+    Command("git-status", "Show working tree status", "git status --short", tags=["git"], shortcut="gs"),
+    Command("docker-up", "Start docker services", "docker compose up -d", tags=["docker"], shortcut="du"),
+    Command("kill-port", "Kill process on a port", "kill -9 $(lsof -t -i:{port})", tags=["network", "ports"]),
 ]
 
 
 class _ListApp(App):
     def compose(self) -> ComposeResult:
         yield CommandList(COMMANDS)
+
+
+class _ShortcutListApp(App):
+    def compose(self) -> ComposeResult:
+        yield CommandList(COMMANDS_WITH_SHORTCUTS)
 
 
 class _SearchApp(App):
@@ -82,6 +93,47 @@ async def test_command_list_filter_empty_string_shows_all():
         await pilot.pause()
         items = app.query_one(ListView).children
         assert len(items) == 3
+
+
+async def test_command_list_filter_by_tag_exact():
+    app = _ListApp()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.query_one(CommandList).filter("#git")
+        await pilot.pause()
+        items = app.query_one(ListView).children
+        assert len(items) == 1
+
+
+async def test_command_list_filter_by_tag_partial():
+    # "git" matches both tag "git" and tag "gitcommands" if present; here matches tag "git"
+    app = _ListApp()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.query_one(CommandList).filter("#net")
+        await pilot.pause()
+        items = app.query_one(ListView).children
+        assert len(items) == 1  # only kill-port has "network" tag
+
+
+async def test_command_list_filter_combined_text_and_tag():
+    app = _ListApp()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.query_one(CommandList).filter("status #git")
+        await pilot.pause()
+        items = app.query_one(ListView).children
+        assert len(items) == 1
+
+
+async def test_command_list_filter_combined_no_match():
+    app = _ListApp()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.query_one(CommandList).filter("status #docker")
+        await pilot.pause()
+        items = app.query(CommandItem)
+        assert len(items) == 0
 
 
 async def test_command_list_highlighted_returns_correct_command():
@@ -191,5 +243,38 @@ async def test_app_escape_clears_search():
         await pilot.press("escape")
         await pilot.pause()
         assert app.query_one(Input).value == ""
+
+
+async def test_command_list_filter_matches_shortcut():
+    app = _ShortcutListApp()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.query_one(CommandList).filter("gs")
+        await pilot.pause()
+        items = app.query(CommandItem)
+        assert len(items) == 1
+        assert items[0].command.shortcut == "gs"
+
+
+async def test_command_list_filter_matches_second_shortcut():
+    app = _ShortcutListApp()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.query_one(CommandList).filter("du")
+        await pilot.pause()
+        items = app.query(CommandItem)
+        assert len(items) == 1
+        assert items[0].command.shortcut == "du"
+
+
+async def test_command_list_filter_command_without_shortcut_still_matches_by_name():
+    app = _ShortcutListApp()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.query_one(CommandList).filter("kill")
+        await pilot.pause()
+        items = app.query(CommandItem)
+        assert len(items) == 1
+        assert items[0].command.name == "kill-port"
 
 
