@@ -1,6 +1,8 @@
 import os
 import sys
+from pathlib import Path
 from bashmage.app import BashMageApp
+from bashmage.context import load_context_commands
 from bashmage.storage import load_commands
 
 
@@ -70,10 +72,13 @@ def main() -> None:
         return
 
     try:
-        commands = load_commands()
+        global_commands = load_commands()
     except Exception as e:
         print(f"bashmage: error loading commands: {e}", file=sys.stderr)
         sys.exit(1)
+
+    context_commands = load_context_commands(Path.cwd())
+    commands = context_commands + global_commands
 
     saved_stdout = sys.stdout
     saved_stderr = sys.stderr
