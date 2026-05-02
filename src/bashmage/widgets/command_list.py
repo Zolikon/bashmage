@@ -13,7 +13,7 @@ class CommandItem(ListItem):
 
     def compose(self) -> ComposeResult:
         name_part = (
-            f"{self.command.name} [bold][[{self.command.shortcut}]][/bold]"
+            f"{self.command.name} [bold]\\[{self.command.shortcut}][/bold]"
             if self.command.shortcut
             else self.command.name
         )
