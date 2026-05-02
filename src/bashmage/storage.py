@@ -16,13 +16,13 @@ tags = "files,listing"
 [[commands]]
 name = "find-file"
 description = "Find file by name"
-command = "find . -name \"{name}\""
+command = 'find . -name "{name}"'
 tags = "files,search"
 
 [[commands]]
 name = "grep-text"
 description = "Search text recursively in directory"
-command = "grep -r \"{pattern}\" ."
+command = 'grep -r "{pattern}" .'
 tags = "search,text"
 
 [[commands]]
