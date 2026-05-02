@@ -16,6 +16,9 @@ _LOADERS: list[tuple[
 def load_context_commands(cwd: Path) -> list[Command]:
     commands: list[Command] = []
     for detect_fn, load_fn in _LOADERS:
-        if detect_fn(cwd):
-            commands.extend(load_fn(cwd))
+        try:
+            if detect_fn(cwd):
+                commands.extend(load_fn(cwd))
+        except Exception:
+            pass
     return commands
