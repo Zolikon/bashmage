@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 from bashmage.app import BashMageApp
 from bashmage.context import load_context_commands
-from bashmage.storage import load_commands
+from bashmage.storage import Command, load_commands
 
 
 _ZSH_INIT = """\
@@ -42,7 +42,7 @@ bind -x '"\\C-b": _bashmage_widget'
 """
 
 
-def _find_by_shortcut(commands: list, query: str):
+def _find_by_shortcut(commands: list[Command], query: str) -> Command | None:
     for cmd in commands:
         if cmd.shortcut == query:
             return cmd
