@@ -15,7 +15,7 @@ _bashmage_widget() {
   local tmp ret cmd saved_stty
   tmp=$(mktemp) || return
   saved_stty=$(stty -g 2>/dev/null)
-  bashmage >"$tmp" </dev/tty
+  command bashmage >"$tmp" </dev/tty
   ret=$?
   [[ -n "$saved_stty" ]] && stty "$saved_stty" 2>/dev/null
   cmd=$(<"$tmp")
@@ -28,6 +28,21 @@ _bashmage_widget() {
 }
 zle -N _bashmage_widget
 bindkey '^b' _bashmage_widget
+bashmage() {
+  if [[ $# -eq 0 ]] || [[ "$1" == --* ]]; then
+    command bashmage "$@"
+    return
+  fi
+  local tmp cmd
+  tmp=$(mktemp) || return
+  command bashmage "$@" >"$tmp"
+  local ret=$?
+  cmd=$(<"$tmp")
+  rm -f "$tmp"
+  [[ $ret -eq 0 && -n "$cmd" ]] || return
+  print -z -- "$cmd"
+}
+alias bm='bashmage'
 """
 
 _BASH_INIT = """\

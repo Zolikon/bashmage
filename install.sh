@@ -18,7 +18,7 @@ fi
 echo "→ Reloading $ZSHRC..."
 # shellcheck disable=SC1090
 if source "$ZSHRC" 2>/dev/null; then
-    echo "✓ Done. Ctrl+B is ready."
+    echo "✓ Done. Ctrl+B and 'bm' are ready."
 else
-    echo "✓ Done. Run 'source ~/.zshrc' or open a new terminal to activate Ctrl+B."
+    echo "✓ Done. Run 'source ~/.zshrc' or open a new terminal to activate Ctrl+B and 'bm'."
 fi
