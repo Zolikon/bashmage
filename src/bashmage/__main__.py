@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 from textual.app import App
 from bashmage.app import BashMageApp
+from bashmage.app_placeholder import PlaceholderApp
 from bashmage.context import load_context_commands
 from bashmage.storage import Command, load_commands
 
@@ -118,7 +119,6 @@ def main() -> None:
                 print(match.command)
                 sys.exit(0)
             else:
-                from bashmage.app_placeholder import PlaceholderApp
                 result = _run_app(PlaceholderApp(match))
                 if result is not None:
                     print(result)
