@@ -30,17 +30,22 @@ class BashMageApp(App[str | None]):
         Binding("ctrl+q", "quit_clean", "Quit"),
     ]
 
-    def __init__(self, commands: list[Command]) -> None:
+    def __init__(self, commands: list[Command], initial_query: str = "") -> None:
         super().__init__()
         self._commands = commands
+        self._initial_query = initial_query
         self._highlighted: Command | None = commands[0] if commands else None
 
     def compose(self) -> ComposeResult:
-        yield SearchBar()
+        yield SearchBar(initial_value=self._initial_query)
         with Horizontal(id="main"):
             yield CommandList(self._commands)
             yield DetailPanel()
         yield Footer()
+
+    def on_mount(self) -> None:
+        if self._initial_query:
+            self.query_one(CommandList).filter(self._initial_query)
 
     def on_search_bar_changed(self, event: SearchBar.Changed) -> None:
         self.query_one(CommandList).filter(event.value)

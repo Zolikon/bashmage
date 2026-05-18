@@ -331,3 +331,38 @@ async def test_search_bar_no_initial_value_is_empty():
         await pilot.pause()
         assert app.query_one(Input).value == ""
 
+
+async def test_app_initial_query_filters_list():
+    commands = [
+        Command("git-status", "Show status", "git status"),
+        Command("docker-up", "Start docker", "docker compose up -d"),
+    ]
+    app = BashMageApp(commands, initial_query="git")
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        items = app.query_one(ListView).children
+        assert len(items) == 1
+
+
+async def test_app_initial_query_prefills_search_bar():
+    commands = [
+        Command("git-status", "Show status", "git status"),
+        Command("docker-up", "Start docker", "docker compose up -d"),
+    ]
+    app = BashMageApp(commands, initial_query="git")
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        assert app.query_one(Input).value == "git"
+
+
+async def test_app_no_initial_query_shows_all_commands():
+    commands = [
+        Command("git-status", "Show status", "git status"),
+        Command("docker-up", "Start docker", "docker compose up -d"),
+    ]
+    app = BashMageApp(commands)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        items = app.query_one(ListView).children
+        assert len(items) == 2
+
