@@ -1,6 +1,7 @@
 import os
 import sys
 from pathlib import Path
+from textual.app import App
 from bashmage.app import BashMageApp
 from bashmage.context import load_context_commands
 from bashmage.storage import Command, load_commands
@@ -73,7 +74,7 @@ def _find_by_shortcut(commands: list[Command], query: str) -> Command | None:
     return None
 
 
-def _run_app(app) -> str | None:
+def _run_app(app: App[str | None]) -> str | None:
     saved_stdout = sys.stdout
     saved_stderr = sys.stderr
     saved_stdout_fd = None
@@ -112,16 +113,17 @@ def main() -> None:
 
     if query is not None:
         match = _find_by_shortcut(commands, query)
-        if match is not None and not match.placeholders:
-            print(match.command)
-            sys.exit(0)
-        if match is not None and match.placeholders:
-            from bashmage.app_placeholder import PlaceholderApp
-            result = _run_app(PlaceholderApp(match))
-            if result is not None:
-                print(result)
+        if match is not None:
+            if not match.placeholders:
+                print(match.command)
                 sys.exit(0)
-            sys.exit(1)
+            else:
+                from bashmage.app_placeholder import PlaceholderApp
+                result = _run_app(PlaceholderApp(match))
+                if result is not None:
+                    print(result)
+                    sys.exit(0)
+                sys.exit(1)
 
     result = _run_app(BashMageApp(commands, initial_query=query or ""))
     if result is not None:
