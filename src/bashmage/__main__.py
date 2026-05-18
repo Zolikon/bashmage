@@ -42,13 +42,6 @@ bind -x '"\\C-b": _bashmage_widget'
 """
 
 
-def _find_by_shortcut(commands: list[Command], query: str) -> Command | None:
-    for cmd in commands:
-        if cmd.shortcut == query:
-            return cmd
-    return None
-
-
 def _print_init(shell: str | None) -> None:
     if shell is None:
         shell_path = os.environ.get("SHELL", "")
@@ -73,6 +66,34 @@ def _print_init(shell: str | None) -> None:
         sys.exit(1)
 
 
+def _find_by_shortcut(commands: list[Command], query: str) -> Command | None:
+    for cmd in commands:
+        if cmd.shortcut == query:
+            return cmd
+    return None
+
+
+def _run_app(app) -> str | None:
+    saved_stdout = sys.stdout
+    saved_stderr = sys.stderr
+    saved_stdout_fd = None
+    try:
+        if not sys.stdout.isatty():
+            tty_fd = os.open("/dev/tty", os.O_RDWR)
+            saved_stdout_fd = os.dup(1)
+            os.dup2(tty_fd, 1)
+            os.close(tty_fd)
+            sys.stdout = open(1, "w", closefd=False)
+            sys.stderr = sys.stdout
+        return app.run()
+    finally:
+        sys.stdout = saved_stdout
+        sys.stderr = saved_stderr
+        if saved_stdout_fd is not None:
+            os.dup2(saved_stdout_fd, 1)
+            os.close(saved_stdout_fd)
+
+
 def main() -> None:
     if len(sys.argv) > 1 and sys.argv[1] == "--init":
         _print_init(sys.argv[2] if len(sys.argv) > 2 else None)
@@ -87,33 +108,26 @@ def main() -> None:
     context_commands = load_context_commands(Path.cwd())
     commands = context_commands + global_commands
 
-    saved_stdout = sys.stdout
-    saved_stderr = sys.stderr
-    saved_stdout_fd = None
+    query = sys.argv[1] if len(sys.argv) > 1 else None
 
-    try:
-        if not sys.stdout.isatty():
-            tty_fd = os.open("/dev/tty", os.O_RDWR)
-            saved_stdout_fd = os.dup(1)
-            os.dup2(tty_fd, 1)
-            os.close(tty_fd)
-            sys.stdout = open(1, "w", closefd=False)
-            sys.stderr = sys.stdout
+    if query is not None:
+        match = _find_by_shortcut(commands, query)
+        if match is not None and not match.placeholders:
+            print(match.command)
+            sys.exit(0)
+        if match is not None and match.placeholders:
+            from bashmage.app_placeholder import PlaceholderApp
+            result = _run_app(PlaceholderApp(match))
+            if result is not None:
+                print(result)
+                sys.exit(0)
+            sys.exit(1)
 
-        app = BashMageApp(commands)
-        result = app.run()
-    finally:
-        sys.stdout = saved_stdout
-        sys.stderr = saved_stderr
-        if saved_stdout_fd is not None:
-            os.dup2(saved_stdout_fd, 1)
-            os.close(saved_stdout_fd)
-
+    result = _run_app(BashMageApp(commands, initial_query=query or ""))
     if result is not None:
         print(result)
         sys.exit(0)
-    else:
-        sys.exit(1)
+    sys.exit(1)
 
 
 if __name__ == "__main__":
