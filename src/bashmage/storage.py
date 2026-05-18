@@ -136,6 +136,7 @@ class Command:
     command: str
     tags: list[str] = field(default_factory=list)
     shortcut: str | None = None
+    path: str | None = None
 
     @property
     def placeholders(self) -> list[str]:
@@ -152,7 +153,8 @@ def _parse_command(raw: dict) -> Command:
     tags_str = raw.pop("tags", "")
     tags = [t for t in (t.strip() for t in tags_str.split(",")) if t] if tags_str else []
     shortcut = raw.pop("shortcut", None)
-    return Command(**raw, tags=tags, shortcut=shortcut)
+    path = raw.pop("path", None)
+    return Command(**raw, tags=tags, shortcut=shortcut, path=path)
 
 
 def load_commands() -> list[Command]:

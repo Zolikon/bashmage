@@ -133,3 +133,30 @@ command = "git status"
     with patch("bashmage.storage.CONFIG_PATH", config):
         commands = load_commands()
     assert commands[0].shortcut is None
+
+
+def test_path_parsed_from_toml(tmp_path):
+    config = tmp_path / "commands.toml"
+    config.write_text("""\
+[[commands]]
+name = "deploy"
+description = "Deploy app"
+command = "make deploy"
+path = "~/projects/myapp"
+""")
+    with patch("bashmage.storage.CONFIG_PATH", config):
+        commands = load_commands()
+    assert commands[0].path == "~/projects/myapp"
+
+
+def test_path_defaults_to_none_when_absent(tmp_path):
+    config = tmp_path / "commands.toml"
+    config.write_text("""\
+[[commands]]
+name = "git-status"
+description = "Show status"
+command = "git status"
+""")
+    with patch("bashmage.storage.CONFIG_PATH", config):
+        commands = load_commands()
+    assert commands[0].path is None
