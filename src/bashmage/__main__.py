@@ -5,7 +5,7 @@ from textual.app import App
 from bashmage.app import BashMageApp
 from bashmage.app_placeholder import PlaceholderApp
 from bashmage.context import load_context_commands
-from bashmage.storage import Command, load_commands
+from bashmage.storage import Command, load_commands, filter_by_path
 
 
 _ZSH_INIT = """\
@@ -117,7 +117,7 @@ def main() -> None:
         return
 
     try:
-        global_commands = load_commands()
+        global_commands = filter_by_path(load_commands(), Path.cwd())
     except Exception as e:
         print(f"bashmage: error loading commands: {e}", file=sys.stderr)
         sys.exit(1)

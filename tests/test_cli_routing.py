@@ -1,3 +1,6 @@
+import sys
+from unittest.mock import patch
+
 from bashmage.__main__ import _find_by_shortcut
 from bashmage.storage import Command
 
@@ -41,3 +44,33 @@ def test_find_by_shortcut_returns_first_on_duplicate_shortcut():
     result = _find_by_shortcut(commands, "x")
     assert result is not None
     assert result.name == "cmd-a"
+
+
+def test_main_filters_global_commands_by_path():
+    from bashmage.__main__ import main
+
+    global_cmds = [
+        Command("visible", "No path restriction", "echo visible"),
+        Command("hidden", "Wrong path restriction", "echo hidden", path="/nonexistent/unlikely/path"),
+    ]
+
+    captured = []
+
+    def fake_run_app(app):
+        captured.extend(app._commands)
+        return None
+
+    with (
+        patch("bashmage.__main__.load_commands", return_value=global_cmds),
+        patch("bashmage.__main__.load_context_commands", return_value=[]),
+        patch("bashmage.__main__._run_app", fake_run_app),
+        patch.object(sys, "argv", ["bashmage"]),
+    ):
+        try:
+            main()
+        except SystemExit:
+            pass
+
+    names = [c.name for c in captured]
+    assert "visible" in names
+    assert "hidden" not in names
