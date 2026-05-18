@@ -42,6 +42,13 @@ bind -x '"\\C-b": _bashmage_widget'
 """
 
 
+def _find_by_shortcut(commands: list, query: str):
+    for cmd in commands:
+        if cmd.shortcut == query:
+            return cmd
+    return None
+
+
 def _print_init(shell: str | None) -> None:
     if shell is None:
         shell_path = os.environ.get("SHELL", "")
