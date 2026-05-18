@@ -157,6 +157,14 @@ def _parse_command(raw: dict) -> Command:
     return Command(**raw, tags=tags, shortcut=shortcut, path=path)
 
 
+def filter_by_path(commands: list[Command], cwd: Path) -> list[Command]:
+    def matches(cmd: Command) -> bool:
+        if cmd.path is None:
+            return True
+        return cwd.is_relative_to(Path(cmd.path).expanduser())
+    return [cmd for cmd in commands if matches(cmd)]
+
+
 def load_commands() -> list[Command]:
     if not CONFIG_PATH.exists():
         CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)

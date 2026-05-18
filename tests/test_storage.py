@@ -2,7 +2,7 @@ import pytest
 import tomllib
 from pathlib import Path
 from unittest.mock import patch
-from bashmage.storage import Command, load_commands
+from bashmage.storage import Command, load_commands, filter_by_path
 
 
 def test_no_placeholders():
@@ -160,3 +160,50 @@ command = "git status"
     with patch("bashmage.storage.CONFIG_PATH", config):
         commands = load_commands()
     assert commands[0].path is None
+
+
+def _make_cmd(path=None):
+    return Command(name="x", description="x", command="echo x", path=path)
+
+
+def test_filter_no_path_always_passes():
+    cmd = _make_cmd(path=None)
+    assert filter_by_path([cmd], Path("/any/dir")) == [cmd]
+
+
+def test_filter_ancestor_path_passes():
+    cmd = _make_cmd(path="/test")
+    assert filter_by_path([cmd], Path("/test/a")) == [cmd]
+
+
+def test_filter_exact_match_passes():
+    cmd = _make_cmd(path="/test/a")
+    assert filter_by_path([cmd], Path("/test/a")) == [cmd]
+
+
+def test_filter_non_ancestor_excluded():
+    cmd = _make_cmd(path="/test2/a")
+    assert filter_by_path([cmd], Path("/test/a")) == []
+
+
+def test_filter_sibling_excluded():
+    cmd = _make_cmd(path="/test/b")
+    assert filter_by_path([cmd], Path("/test/a")) == []
+
+
+def test_filter_tilde_expansion():
+    home = Path.home()
+    cmd = _make_cmd(path="~/projects")
+    assert filter_by_path([cmd], home / "projects" / "myapp") == [cmd]
+
+
+def test_filter_mixed_commands():
+    visible_no_path = _make_cmd(path=None)
+    visible_ancestor = _make_cmd(path="/test")
+    visible_ancestor.name = "ancestor"
+    hidden = _make_cmd(path="/test/b")
+    hidden.name = "hidden"
+    result = filter_by_path([visible_no_path, visible_ancestor, hidden], Path("/test/a"))
+    assert visible_no_path in result
+    assert visible_ancestor in result
+    assert hidden not in result
