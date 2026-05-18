@@ -199,11 +199,13 @@ def test_filter_tilde_expansion():
 
 def test_filter_mixed_commands():
     visible_no_path = _make_cmd(path=None)
-    visible_ancestor = _make_cmd(path="/test")
-    visible_ancestor.name = "ancestor"
-    hidden = _make_cmd(path="/test/b")
-    hidden.name = "hidden"
+    visible_ancestor = Command(name="ancestor", description="x", command="echo x", path="/test")
+    hidden = Command(name="hidden", description="x", command="echo x", path="/test/b")
     result = filter_by_path([visible_no_path, visible_ancestor, hidden], Path("/test/a"))
     assert visible_no_path in result
     assert visible_ancestor in result
     assert hidden not in result
+
+
+def test_filter_empty_list():
+    assert filter_by_path([], Path("/any/dir")) == []

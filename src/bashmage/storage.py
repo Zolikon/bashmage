@@ -158,10 +158,11 @@ def _parse_command(raw: dict) -> Command:
 
 
 def filter_by_path(commands: list[Command], cwd: Path) -> list[Command]:
+    resolved_cwd = cwd.resolve()
     def matches(cmd: Command) -> bool:
         if cmd.path is None:
             return True
-        return cwd.is_relative_to(Path(cmd.path).expanduser())
+        return resolved_cwd.is_relative_to(Path(cmd.path).expanduser())
     return [cmd for cmd in commands if matches(cmd)]
 
 
