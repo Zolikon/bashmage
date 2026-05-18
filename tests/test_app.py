@@ -309,3 +309,25 @@ async def test_command_item_no_shortcut_renders_name_only():
         assert "git-status" in rendered
         assert "[" not in rendered
 
+
+async def test_search_bar_initial_value_is_shown():
+    class _App(App):
+        def compose(self) -> ComposeResult:
+            yield SearchBar(initial_value="git")
+
+    app = _App()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        assert app.query_one(Input).value == "git"
+
+
+async def test_search_bar_no_initial_value_is_empty():
+    class _App(App):
+        def compose(self) -> ComposeResult:
+            yield SearchBar()
+
+    app = _App()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        assert app.query_one(Input).value == ""
+

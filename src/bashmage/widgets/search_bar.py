@@ -17,8 +17,12 @@ class SearchBar(Widget):
             super().__init__()
             self.value = value
 
+    def __init__(self, initial_value: str = "") -> None:
+        super().__init__()
+        self._initial_value = initial_value
+
     def compose(self) -> ComposeResult:
-        yield Input(placeholder="search commands...")
+        yield Input(value=self._initial_value, placeholder="search commands...")
 
     def on_mount(self) -> None:
         self.query_one(Input).focus()
