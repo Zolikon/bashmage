@@ -86,8 +86,7 @@ class BashMageApp(App[str | None]):
         return True
 
     def action_select_command(self) -> None:
-        from textual.widgets import Input
-        query = self.query_one(SearchBar).query_one(Input).value
+        query = self.query_one(SearchBar).value
         if self._ai_config is not None and query.startswith("?"):
             natural = query[1:].strip()
             if natural and len(natural) <= 1000:

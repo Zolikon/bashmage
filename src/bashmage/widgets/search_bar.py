@@ -32,3 +32,7 @@ class SearchBar(Widget):
 
     def clear(self) -> None:
         self.query_one(Input).value = ""
+
+    @property
+    def value(self) -> str:
+        return self.query_one(Input).value
