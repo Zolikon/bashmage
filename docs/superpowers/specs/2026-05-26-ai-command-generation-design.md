@@ -28,12 +28,14 @@ src/bashmage/
 
 ```
 src/bashmage/
-├── storage.py      # AIConfig dataclass + load_ai_config()
-├── app.py          # detect ? prefix, push AIResultModal, wire dismiss callback
-└── __main__.py     # load AI config, pass to BashMageApp
+├── storage.py                   # AIConfig dataclass + load_ai_config()
+├── app.py                       # detect ? prefix, push AIResultModal, wire dismiss callback
+├── __main__.py                  # load AI config, pass to BashMageApp
+└── widgets/
+    └── command_list.py          # add show_ai_hint() method
 ```
 
-All other files (`SearchBar`, `CommandList`, `DetailPanel`, `PlaceholderModal`, `Command`, `_activate()`) are untouched. The AI result feeds into `_activate()` exactly like a command selected from the list.
+`SearchBar`, `DetailPanel`, `PlaceholderModal`, `Command`, and `_activate()` are untouched. The AI result feeds into `_activate()` exactly like a command selected from the list.
 
 ---
 
@@ -75,7 +77,7 @@ def load_ai_config() -> AIConfig | None:
 
 ### `on_search_bar_changed`
 
-When query starts with `?` and AI is configured: skip `CommandList.filter()` and call a new `CommandList.show_ai_hint()` that renders a single dimmed placeholder item `"✨ press Enter to generate with AI"`. Normal query → normal filter as today.
+When query starts with `?` and AI is configured: skip `CommandList.filter()` and call the new `CommandList.show_ai_hint()` method, which clears the list and renders a single dimmed item `"✨ press Enter to generate with AI"`. When AI is not configured, `?` is passed through to `filter()` as a normal query. Normal query (no `?` prefix) → normal filter as today.
 
 ### `action_select_command`
 
@@ -232,7 +234,7 @@ Shell captures stdout → puts command on readline buffer
 
 ## Query Constraints
 
-- Maximum query length: 1000 characters (enforced in `SearchBar` or `AIResultModal` — a `maxlength` on the search input or a guard in `action_select_command`)
+- Maximum query length: 1000 characters — enforced by a guard in `action_select_command`: if `len(natural) > 1000`, the Enter press is a no-op (no modal pushed)
 - Empty query after `?` strip: no-op (Enter does nothing)
 
 ---
