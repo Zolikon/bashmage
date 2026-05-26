@@ -34,7 +34,8 @@ async def test_ai_result_modal_shows_loading_on_mount():
         assert app.screen.query_one("#loading").display is True
         assert app.screen.query_one("#command-preview").display is False
         assert app.screen.query_one("#modal-buttons").display is False
-    app.workers.cancel_all()
+        app.workers.cancel_all()
+        await pilot.pause()
 
 
 async def test_ai_result_modal_shows_command_after_generation():
@@ -93,7 +94,8 @@ async def test_ai_result_modal_enter_during_loading_is_noop():
         await pilot.pause()
         # Modal still on screen — enter was ignored
         assert app.result == "NOT_SET"
-    app.workers.cancel_all()
+        app.workers.cancel_all()
+        await pilot.pause()
 
 
 async def test_ai_result_modal_shows_error_message_on_failure():

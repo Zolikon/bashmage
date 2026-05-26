@@ -76,6 +76,8 @@ class AIResultModal(ModalScreen[Command | None]):
             self._show_result(event.worker.result)
         elif event.worker.state == WorkerState.ERROR:
             self._show_error(str(event.worker.error))
+        elif event.worker.state == WorkerState.CANCELLED:
+            self.dismiss(None)
 
     def _show_result(self, command_text: str) -> None:
         self._generated = Command(
@@ -101,7 +103,8 @@ class AIResultModal(ModalScreen[Command | None]):
         if event.button.id == "cancel":
             self.dismiss(None)
         elif event.button.id == "accept":
-            self.dismiss(self._generated)
+            if self._generated is not None:
+                self.dismiss(self._generated)
 
     def action_confirm(self) -> None:
         if self._generated is not None:
