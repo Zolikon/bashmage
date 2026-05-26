@@ -366,3 +366,23 @@ async def test_app_no_initial_query_shows_all_commands():
         items = app.query_one(ListView).children
         assert len(items) == 2
 
+
+async def test_command_list_show_ai_hint_renders_one_non_command_item():
+    app = _ListApp()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.query_one(CommandList).show_ai_hint()
+        await pilot.pause()
+        lv = app.query_one(ListView)
+        assert len(lv.children) == 1
+        assert not isinstance(lv.children[0], CommandItem)
+
+
+async def test_command_list_show_ai_hint_clears_highlighted_command():
+    app = _ListApp()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.query_one(CommandList).show_ai_hint()
+        await pilot.pause()
+        assert app.query_one(CommandList).get_highlighted_command() is None
+

@@ -87,6 +87,14 @@ class CommandList(Widget):
             lv.append(ListItem(Label(f"[dim]{msg}[/dim]")))
             self.post_message(self.Highlighted(None))
 
+    def show_ai_hint(self) -> None:
+        self._filtered = []
+        self._current_command = None
+        lv = self.query_one(ListView)
+        lv.clear()
+        lv.append(ListItem(Label("[dim]✨ press Enter to generate with AI[/dim]")))
+        self.post_message(self.Highlighted(None))
+
     def get_highlighted_command(self) -> Command | None:
         return self._current_command
 
