@@ -149,6 +149,25 @@ class Command:
         return result
 
 
+@dataclass
+class AIConfig:
+    model: str
+    base_url: str = "http://localhost:11434"
+
+
+def load_ai_config() -> AIConfig | None:
+    if not CONFIG_PATH.exists():
+        return None
+    data = tomllib.loads(CONFIG_PATH.read_text())
+    ai = data.get("ai")
+    if ai is None:
+        return None
+    return AIConfig(
+        model=ai["model"],
+        base_url=ai.get("base_url", "http://localhost:11434"),
+    )
+
+
 def _parse_command(raw: dict) -> Command:
     tags_str = raw.pop("tags", "")
     tags = [t for t in (t.strip() for t in tags_str.split(",")) if t] if tags_str else []
