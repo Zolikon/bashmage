@@ -1,12 +1,18 @@
 import pytest
 from textual.app import App, ComposeResult
+from textual.screen import ModalScreen
 from textual.widgets import Input, Label
+from unittest.mock import MagicMock, patch
 from bashmage.widgets.search_bar import SearchBar
 from textual.widgets import ListView
-from bashmage.storage import Command
+from bashmage.storage import AIConfig, Command
 from bashmage.widgets.command_list import CommandItem, CommandList
 from bashmage.widgets.detail_panel import DetailPanel
 from bashmage.app import BashMageApp
+from bashmage.ollama import OllamaClient
+
+
+_AI_CONFIG = AIConfig(model="llama3.2", base_url="http://localhost:11434")
 
 
 COMMANDS = [
@@ -385,4 +391,88 @@ async def test_command_list_show_ai_hint_clears_highlighted_command():
         app.query_one(CommandList).show_ai_hint()
         await pilot.pause()
         assert app.query_one(CommandList).get_highlighted_command() is None
+
+
+async def test_app_question_prefix_with_ai_config_shows_ai_hint():
+    app = BashMageApp(_SAMPLE_COMMANDS, ai_config=_AI_CONFIG)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.press("?")
+        await pilot.pause()
+        items = app.query(CommandItem)
+        assert len(items) == 0
+        lv = app.query_one(ListView)
+        assert len(lv.children) == 1
+
+
+async def test_app_question_prefix_without_ai_config_filters_normally():
+    app = BashMageApp(_SAMPLE_COMMANDS)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.press("?")
+        await pilot.pause()
+        items = app.query(CommandItem)
+        assert len(items) == 0
+        lv = app.query_one(ListView)
+        assert len(lv.children) == 1
+        assert not isinstance(lv.children[0], CommandItem)
+
+
+async def test_app_question_enter_with_ai_config_pushes_modal():
+    with patch.object(OllamaClient, "generate", return_value="docker ps"):
+        app = BashMageApp(_SAMPLE_COMMANDS, ai_config=_AI_CONFIG)
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            for ch in "?list docker":
+                await pilot.press(ch)
+            await pilot.pause()
+            await pilot.press("enter")
+            await pilot.pause()
+            assert isinstance(app.screen, ModalScreen)
+            app.workers.cancel_all()
+            await pilot.pause()
+
+
+async def test_app_question_enter_empty_query_is_noop():
+    app = BashMageApp(_SAMPLE_COMMANDS, ai_config=_AI_CONFIG)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.press("?")
+        await pilot.pause()
+        await pilot.press("enter")
+        await pilot.pause()
+        assert not isinstance(app.screen, ModalScreen)
+
+
+async def test_app_question_enter_query_over_1000_chars_is_noop():
+    app = BashMageApp(_SAMPLE_COMMANDS, ai_config=_AI_CONFIG)
+    long_query = "?" + "x" * 1001
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.query_one(SearchBar).query_one(Input).value = long_query
+        await pilot.pause()
+        await pilot.press("enter")
+        await pilot.pause()
+        assert not isinstance(app.screen, ModalScreen)
+
+
+async def test_app_ai_result_with_placeholder_pushes_placeholder_modal():
+    from bashmage.widgets.placeholder_modal import PlaceholderModal
+
+    with patch.object(OllamaClient, "generate", return_value="docker ps | grep {port}"):
+        app = BashMageApp(_SAMPLE_COMMANDS, ai_config=_AI_CONFIG)
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            for ch in "?find containers":
+                await pilot.press(ch)
+            await pilot.pause()
+            await pilot.press("enter")
+            await pilot.pause()
+            await pilot.pause(0.1)
+            await pilot.pause()
+            await pilot.press("enter")
+            await pilot.pause()
+            assert isinstance(app.screen, PlaceholderModal)
+            app.workers.cancel_all()
+            await pilot.pause()
 
