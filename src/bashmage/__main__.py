@@ -5,7 +5,7 @@ from textual.app import App
 from bashmage.app import BashMageApp
 from bashmage.app_placeholder import PlaceholderApp
 from bashmage.context import load_context_commands
-from bashmage.storage import Command, load_commands, filter_by_path
+from bashmage.storage import Command, load_commands, filter_by_path, load_ai_config
 
 
 _ZSH_INIT = """\
@@ -118,6 +118,7 @@ def main() -> None:
 
     try:
         global_commands = filter_by_path(load_commands(), Path.cwd())
+        ai_config = load_ai_config()
     except Exception as e:
         print(f"bashmage: error loading commands: {e}", file=sys.stderr)
         sys.exit(1)
@@ -140,7 +141,7 @@ def main() -> None:
                     sys.exit(0)
                 sys.exit(1)
 
-    result = _run_app(BashMageApp(commands, initial_query=query or ""))
+    result = _run_app(BashMageApp(commands, initial_query=query or "", ai_config=ai_config))
     if result is not None:
         print(result)
         sys.exit(0)
