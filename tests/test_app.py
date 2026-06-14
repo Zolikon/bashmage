@@ -1,7 +1,7 @@
 import pytest
 from textual.app import App, ComposeResult
 from textual.screen import ModalScreen
-from textual.widgets import Input, Label
+from textual.widgets import Input, Label, Static
 from unittest.mock import MagicMock, patch
 from bashmage.widgets.search_bar import SearchBar
 from textual.widgets import ListView
@@ -454,6 +454,35 @@ async def test_app_question_enter_query_over_1000_chars_is_noop():
         await pilot.press("enter")
         await pilot.pause()
         assert not isinstance(app.screen, ModalScreen)
+
+
+async def test_app_ai_status_indicator_shown_when_model_not_loaded():
+    with patch.object(OllamaClient, "is_model_loaded", return_value=False):
+        app = BashMageApp(_SAMPLE_COMMANDS, ai_config=_AI_CONFIG)
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            await pilot.pause()
+            status = app.query_one("#ai-status", Static)
+            assert status.display is True
+
+
+async def test_app_ai_status_indicator_hidden_when_model_loaded():
+    with patch.object(OllamaClient, "is_model_loaded", return_value=True):
+        app = BashMageApp(_SAMPLE_COMMANDS, ai_config=_AI_CONFIG)
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            await pilot.pause()
+            status = app.query_one("#ai-status", Static)
+            assert status.display is False
+
+
+async def test_app_ai_status_indicator_hidden_without_ai_config():
+    app = BashMageApp(_SAMPLE_COMMANDS)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.pause()
+        status = app.query_one("#ai-status", Static)
+        assert status.display is False
 
 
 async def test_app_ai_result_with_placeholder_pushes_placeholder_modal():

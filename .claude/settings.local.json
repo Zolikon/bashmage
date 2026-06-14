@@ -11,7 +11,14 @@
       "Bash(pytest *)",
       "Bash(python *)",
       "Bash(python3 *)",
-      "Bash(uv tool *)"
+      "Bash(uv tool *)",
+      "Bash(/Users/Zoltan_Pozsonyi/work/bashmage/.venv/bin/pytest *)",
+      "Bash(/Users/Zoltan_Pozsonyi/work/bashmage/.venv/bin/python *)",
+      "Bash(.venv/bin/pytest tests/test_placeholder_modal.py -v)",
+      "Bash(.venv/bin/pytest *)",
+      "Bash(/Users/Zoltan_Pozsonyi/.local/bin/uv run *)",
+      "Bash(uv sync *)",
+      "Bash(uv run *)"
     ]
   }
 }

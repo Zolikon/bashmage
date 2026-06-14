@@ -1,7 +1,8 @@
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal
-from textual.widgets import Footer
+from textual.widgets import Footer, Static
+from textual.worker import Worker, WorkerState
 
 from bashmage.ollama import OllamaClient
 from bashmage.storage import AIConfig, Command
@@ -20,6 +21,12 @@ class BashMageApp(App[str | None]):
     #main {
         layout: horizontal;
         height: 1fr;
+    }
+    #ai-status {
+        height: 1;
+        padding: 0 1;
+        color: $warning;
+        display: none;
     }
     """
 
@@ -46,6 +53,7 @@ class BashMageApp(App[str | None]):
 
     def compose(self) -> ComposeResult:
         yield SearchBar(initial_value=self._initial_query)
+        yield Static("", id="ai-status")
         with Horizontal(id="main"):
             yield CommandList(self._commands)
             yield DetailPanel()
@@ -54,6 +62,24 @@ class BashMageApp(App[str | None]):
     def on_mount(self) -> None:
         if self._initial_query:
             self.query_one(CommandList).filter(self._initial_query)
+        if self._ai_config is not None:
+            client = OllamaClient(self._ai_config.base_url, self._ai_config.model)
+            self.run_worker(
+                client.is_model_loaded,
+                thread=True,
+                exit_on_error=False,
+                name="ai_status_check",
+            )
+
+    def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
+        if event.worker.name != "ai_status_check":
+            return
+        if event.state in (WorkerState.SUCCESS, WorkerState.ERROR):
+            loaded = event.state == WorkerState.SUCCESS and event.worker.result is True
+            if not loaded:
+                status = self.query_one("#ai-status", Static)
+                status.update(f"⚠ {self._ai_config.model} not loaded in Ollama")
+                status.display = True
 
     def on_search_bar_changed(self, event: SearchBar.Changed) -> None:
         if self._ai_config is not None and event.value.startswith("?"):

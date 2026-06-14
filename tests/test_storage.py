@@ -2,7 +2,7 @@ import pytest
 import tomllib
 from pathlib import Path
 from unittest.mock import patch
-from bashmage.storage import Command, load_commands, filter_by_path, AIConfig, load_ai_config
+from bashmage.storage import Command, load_commands, filter_by_path, AIConfig, load_ai_config, AI_CONFIG_PATH
 
 
 def test_no_placeholders():
@@ -212,38 +212,38 @@ def test_filter_empty_list():
 
 
 def test_load_ai_config_returns_none_when_section_absent(tmp_path):
-    config = tmp_path / "commands.toml"
-    config.write_text("[[commands]]\nname='x'\ndescription='x'\ncommand='x'\n")
-    with patch("bashmage.storage.CONFIG_PATH", config):
+    config = tmp_path / "config.toml"
+    config.write_text("[other]\nkey = 'value'\n")
+    with patch("bashmage.storage.AI_CONFIG_PATH", config):
         assert load_ai_config() is None
 
 
 def test_load_ai_config_returns_none_when_file_missing(tmp_path):
-    config = tmp_path / "commands.toml"
-    with patch("bashmage.storage.CONFIG_PATH", config):
+    config = tmp_path / "config.toml"
+    with patch("bashmage.storage.AI_CONFIG_PATH", config):
         assert load_ai_config() is None
 
 
 def test_load_ai_config_parses_model(tmp_path):
-    config = tmp_path / "commands.toml"
+    config = tmp_path / "config.toml"
     config.write_text('[ai]\nmodel = "llama3.2"\n')
-    with patch("bashmage.storage.CONFIG_PATH", config):
+    with patch("bashmage.storage.AI_CONFIG_PATH", config):
         ai = load_ai_config()
     assert ai is not None
     assert ai.model == "llama3.2"
 
 
 def test_load_ai_config_uses_default_base_url_when_absent(tmp_path):
-    config = tmp_path / "commands.toml"
+    config = tmp_path / "config.toml"
     config.write_text('[ai]\nmodel = "llama3.2"\n')
-    with patch("bashmage.storage.CONFIG_PATH", config):
+    with patch("bashmage.storage.AI_CONFIG_PATH", config):
         ai = load_ai_config()
     assert ai.base_url == "http://localhost:11434"
 
 
 def test_load_ai_config_parses_custom_base_url(tmp_path):
-    config = tmp_path / "commands.toml"
+    config = tmp_path / "config.toml"
     config.write_text('[ai]\nmodel = "llama3.2"\nbase_url = "http://myhost:9999"\n')
-    with patch("bashmage.storage.CONFIG_PATH", config):
+    with patch("bashmage.storage.AI_CONFIG_PATH", config):
         ai = load_ai_config()
     assert ai.base_url == "http://myhost:9999"

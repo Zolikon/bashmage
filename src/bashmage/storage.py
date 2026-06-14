@@ -5,6 +5,7 @@ from pathlib import Path
 
 
 CONFIG_PATH = Path.home() / ".config" / "bashmage" / "commands.toml"
+AI_CONFIG_PATH = Path.home() / ".config" / "bashmage" / "config.toml"
 
 DEFAULT_COMMANDS = """\
 [[commands]]
@@ -156,9 +157,9 @@ class AIConfig:
 
 
 def load_ai_config() -> AIConfig | None:
-    if not CONFIG_PATH.exists():
+    if not AI_CONFIG_PATH.exists():
         return None
-    data = tomllib.loads(CONFIG_PATH.read_text())
+    data = tomllib.loads(AI_CONFIG_PATH.read_text())
     ai = data.get("ai")
     if ai is None:
         return None
