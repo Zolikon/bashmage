@@ -5,3 +5,7 @@ dist/
 .venv/
 .superpowers/
 .worktrees/
+.claude/
+.pytest_cache/
+.ruff_cache/
+docs/superpowers/

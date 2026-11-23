@@ -16,15 +16,44 @@ _AI_CONFIG = AIConfig(model="llama3.2", base_url="http://localhost:11434")
 
 
 COMMANDS = [
-    Command("git-status", "Show working tree status", "git status --short", tags=["git", "status"]),
-    Command("docker-up", "Start docker services", "docker compose up -d", tags=["docker"]),
-    Command("kill-port", "Kill process on a port", "kill -9 $(lsof -t -i:{port})", tags=["network", "ports"]),
+    Command(
+        "git-status",
+        "Show working tree status",
+        "git status --short",
+        tags=["git", "status"],
+    ),
+    Command(
+        "docker-up", "Start docker services", "docker compose up -d", tags=["docker"]
+    ),
+    Command(
+        "kill-port",
+        "Kill process on a port",
+        "kill -9 $(lsof -t -i:{port})",
+        tags=["network", "ports"],
+    ),
 ]
 
 COMMANDS_WITH_SHORTCUTS = [
-    Command("git-status", "Show working tree status", "git status --short", tags=["git"], shortcut="gs"),
-    Command("docker-up", "Start docker services", "docker compose up -d", tags=["docker"], shortcut="du"),
-    Command("kill-port", "Kill process on a port", "kill -9 $(lsof -t -i:{port})", tags=["network", "ports"]),
+    Command(
+        "git-status",
+        "Show working tree status",
+        "git status --short",
+        tags=["git"],
+        shortcut="gs",
+    ),
+    Command(
+        "docker-up",
+        "Start docker services",
+        "docker compose up -d",
+        tags=["docker"],
+        shortcut="du",
+    ),
+    Command(
+        "kill-port",
+        "Kill process on a port",
+        "kill -9 $(lsof -t -i:{port})",
+        tags=["network", "ports"],
+    ),
 ]
 
 
@@ -192,6 +221,7 @@ async def test_detail_panel_show_updates_content():
         app.query_one(DetailPanel).show(cmd)
         await pilot.pause()
         from textual.widgets import Static
+
         content = str(app.query_one("#command-preview", Static).render())
         assert "{port}" in content
 
@@ -285,7 +315,9 @@ async def test_command_list_filter_command_without_shortcut_still_matches_by_nam
 
 
 async def test_command_item_renders_shortcut_after_name():
-    cmd = Command("switch-branch", "Switch git branch", "git checkout {branch}", shortcut="sw")
+    cmd = Command(
+        "switch-branch", "Switch git branch", "git checkout {branch}", shortcut="sw"
+    )
 
     class _ItemApp(App):
         def compose(self) -> ComposeResult:
@@ -456,33 +488,19 @@ async def test_app_question_enter_query_over_1000_chars_is_noop():
         assert not isinstance(app.screen, ModalScreen)
 
 
-async def test_app_ai_status_indicator_shown_when_model_not_loaded():
-    with patch.object(OllamaClient, "is_model_loaded", return_value=False):
-        app = BashMageApp(_SAMPLE_COMMANDS, ai_config=_AI_CONFIG)
-        async with app.run_test() as pilot:
-            await pilot.pause()
-            await pilot.pause()
-            status = app.query_one("#ai-status", Static)
-            assert status.display is True
+async def test_app_shows_model_info_when_ai_configured():
+    app = BashMageApp(_SAMPLE_COMMANDS, ai_config=_AI_CONFIG)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        info = app.query_one("#ai-model-info", Static)
+        assert "llama3.2" in str(info.render())
 
 
-async def test_app_ai_status_indicator_hidden_when_model_loaded():
-    with patch.object(OllamaClient, "is_model_loaded", return_value=True):
-        app = BashMageApp(_SAMPLE_COMMANDS, ai_config=_AI_CONFIG)
-        async with app.run_test() as pilot:
-            await pilot.pause()
-            await pilot.pause()
-            status = app.query_one("#ai-status", Static)
-            assert status.display is False
-
-
-async def test_app_ai_status_indicator_hidden_without_ai_config():
+async def test_app_no_model_info_without_ai_config():
     app = BashMageApp(_SAMPLE_COMMANDS)
     async with app.run_test() as pilot:
         await pilot.pause()
-        await pilot.pause()
-        status = app.query_one("#ai-status", Static)
-        assert status.display is False
+        assert len(list(app.query("#ai-model-info"))) == 0
 
 
 async def test_app_ai_result_with_placeholder_pushes_placeholder_modal():
@@ -504,4 +522,3 @@ async def test_app_ai_result_with_placeholder_pushes_placeholder_modal():
             assert isinstance(app.screen, PlaceholderModal)
             app.workers.cancel_all()
             await pilot.pause()
-

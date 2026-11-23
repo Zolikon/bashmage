@@ -2,8 +2,6 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal
 from textual.widgets import Footer, Static
-from textual.worker import Worker, WorkerState
-
 from bashmage.ollama import OllamaClient
 from bashmage.storage import AIConfig, Command
 from bashmage.widgets.ai_result_modal import AIResultModal
@@ -22,11 +20,10 @@ class BashMageApp(App[str | None]):
         layout: horizontal;
         height: 1fr;
     }
-    #ai-status {
+    #ai-model-info {
         height: 1;
         padding: 0 1;
-        color: $warning;
-        display: none;
+        text-align: left;
     }
     """
 
@@ -53,7 +50,11 @@ class BashMageApp(App[str | None]):
 
     def compose(self) -> ComposeResult:
         yield SearchBar(initial_value=self._initial_query)
-        yield Static("", id="ai-status")
+        if self._ai_config is not None:
+            yield Static(
+                f"✨ using [accent]{self._ai_config.model}[/accent]",
+                id="ai-model-info",
+            )
         with Horizontal(id="main"):
             yield CommandList(self._commands)
             yield DetailPanel()
@@ -62,24 +63,6 @@ class BashMageApp(App[str | None]):
     def on_mount(self) -> None:
         if self._initial_query:
             self.query_one(CommandList).filter(self._initial_query)
-        if self._ai_config is not None:
-            client = OllamaClient(self._ai_config.base_url, self._ai_config.model)
-            self.run_worker(
-                client.is_model_loaded,
-                thread=True,
-                exit_on_error=False,
-                name="ai_status_check",
-            )
-
-    def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
-        if event.worker.name != "ai_status_check":
-            return
-        if event.state in (WorkerState.SUCCESS, WorkerState.ERROR):
-            loaded = event.state == WorkerState.SUCCESS and event.worker.result is True
-            if not loaded:
-                status = self.query_one("#ai-status", Static)
-                status.update(f"⚠ {self._ai_config.model} not loaded in Ollama")
-                status.display = True
 
     def on_search_bar_changed(self, event: SearchBar.Changed) -> None:
         if self._ai_config is not None and event.value.startswith("?"):
@@ -99,14 +82,17 @@ class BashMageApp(App[str | None]):
 
     def action_list_up(self) -> None:
         from textual.widgets import ListView
+
         self.query_one(ListView).action_cursor_up()
 
     def action_list_down(self) -> None:
         from textual.widgets import ListView
+
         self.query_one(ListView).action_cursor_down()
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         from textual.screen import ModalScreen
+
         if action == "select_command":
             return not isinstance(self.screen, ModalScreen)
         return True
@@ -135,9 +121,11 @@ class BashMageApp(App[str | None]):
 
     def _activate(self, command: Command) -> None:
         if command.placeholders:
+
             def on_dismiss(result: str | None) -> None:
                 if result is not None:
                     self.exit(result)
+
             self.push_screen(PlaceholderModal(command), on_dismiss)
         else:
             self.exit(command.command)

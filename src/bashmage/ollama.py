@@ -27,32 +27,21 @@ class OllamaError(Exception):
 
 class OllamaClient:
     def __init__(self, base_url: str, model: str) -> None:
-        self._base_url = base_url.rstrip('/')
+        self._base_url = base_url.rstrip("/")
         self._url = f"{self._base_url}/api/generate"
         self._model = model
 
-    def is_model_loaded(self) -> bool:
-        req = urllib.request.Request(f"{self._base_url}/api/ps")
-        try:
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                body = json.loads(resp.read())
-                base = self._model.split(":")[0]
-                return any(
-                    m.get("name", "").split(":")[0] == base
-                    for m in body.get("models", [])
-                )
-        except Exception:
-            return False
-
     def generate(self, prompt: str) -> str:
-        payload = json.dumps({
-            "model": self._model,
-            "prompt": prompt,
-            "system": SYSTEM_PROMPT,
-            "stream": False,
-            "format": _RESPONSE_SCHEMA,
-            "think": False,
-        }).encode()
+        payload = json.dumps(
+            {
+                "model": self._model,
+                "prompt": prompt,
+                "system": SYSTEM_PROMPT,
+                "stream": False,
+                "format": _RESPONSE_SCHEMA,
+                "think": False,
+            }
+        ).encode()
         req = urllib.request.Request(
             self._url,
             data=payload,

@@ -17,13 +17,18 @@ def _mock_urlopen(command: str):
 
 
 def test_generate_returns_stripped_response():
-    with patch("bashmage.ollama.urllib.request.urlopen", return_value=_mock_urlopen("  docker ps  ")):
+    with patch(
+        "bashmage.ollama.urllib.request.urlopen",
+        return_value=_mock_urlopen("  docker ps  "),
+    ):
         client = OllamaClient("http://localhost:11434", "llama3.2")
         assert client.generate("list docker containers") == "docker ps"
 
 
 def test_generate_sends_request_to_api_generate_endpoint():
-    with patch("bashmage.ollama.urllib.request.urlopen", return_value=_mock_urlopen("echo hi")) as mock_open:
+    with patch(
+        "bashmage.ollama.urllib.request.urlopen", return_value=_mock_urlopen("echo hi")
+    ) as mock_open:
         client = OllamaClient("http://myhost:9999", "mymodel")
         client.generate("say hi")
     req = mock_open.call_args[0][0]
@@ -31,7 +36,9 @@ def test_generate_sends_request_to_api_generate_endpoint():
 
 
 def test_generate_sends_model_prompt_format_in_payload():
-    with patch("bashmage.ollama.urllib.request.urlopen", return_value=_mock_urlopen("echo hi")) as mock_open:
+    with patch(
+        "bashmage.ollama.urllib.request.urlopen", return_value=_mock_urlopen("echo hi")
+    ) as mock_open:
         client = OllamaClient("http://localhost:11434", "llama3.2")
         client.generate("say hi")
     req = mock_open.call_args[0][0]
@@ -42,8 +49,14 @@ def test_generate_sends_model_prompt_format_in_payload():
     assert payload["format"] == _RESPONSE_SCHEMA
 
 
+from urllib.error import URLError
+
+
 def test_generate_raises_ollama_error_on_connection_failure():
-    with patch("bashmage.ollama.urllib.request.urlopen", side_effect=URLError("Connection refused")):
+    with patch(
+        "bashmage.ollama.urllib.request.urlopen",
+        side_effect=URLError("Connection refused"),
+    ):
         client = OllamaClient("http://localhost:11434", "llama3.2")
         with pytest.raises(OllamaError, match="Cannot reach Ollama"):
             client.generate("anything")
@@ -76,56 +89,10 @@ def test_generate_raises_ollama_error_when_structured_response_missing_command_k
 
 
 def test_generate_strips_trailing_slash_from_base_url():
-    with patch("bashmage.ollama.urllib.request.urlopen", return_value=_mock_urlopen("echo hi")) as mock_open:
+    with patch(
+        "bashmage.ollama.urllib.request.urlopen", return_value=_mock_urlopen("echo hi")
+    ) as mock_open:
         client = OllamaClient("http://localhost:11434/", "llama3.2")
         client.generate("say hi")
     req = mock_open.call_args[0][0]
     assert req.full_url == "http://localhost:11434/api/generate"
-
-
-def _mock_ps_urlopen(models: list[str]):
-    body = json.dumps({"models": [{"name": m} for m in models]}).encode()
-    mock_resp = MagicMock()
-    mock_resp.read.return_value = body
-    mock_cm = MagicMock()
-    mock_cm.__enter__.return_value = mock_resp
-    mock_cm.__exit__.return_value = False
-    return mock_cm
-
-
-def test_is_model_loaded_returns_true_when_model_present():
-    with patch("bashmage.ollama.urllib.request.urlopen", return_value=_mock_ps_urlopen(["llama3.2:latest"])):
-        client = OllamaClient("http://localhost:11434", "llama3.2")
-        assert client.is_model_loaded() is True
-
-
-def test_is_model_loaded_returns_false_when_model_absent():
-    with patch("bashmage.ollama.urllib.request.urlopen", return_value=_mock_ps_urlopen(["mistral:latest"])):
-        client = OllamaClient("http://localhost:11434", "llama3.2")
-        assert client.is_model_loaded() is False
-
-
-def test_is_model_loaded_returns_false_when_no_models_running():
-    with patch("bashmage.ollama.urllib.request.urlopen", return_value=_mock_ps_urlopen([])):
-        client = OllamaClient("http://localhost:11434", "llama3.2")
-        assert client.is_model_loaded() is False
-
-
-def test_is_model_loaded_matches_base_name_ignoring_tag():
-    with patch("bashmage.ollama.urllib.request.urlopen", return_value=_mock_ps_urlopen(["llama3.2:latest"])):
-        client = OllamaClient("http://localhost:11434", "llama3.2:latest")
-        assert client.is_model_loaded() is True
-
-
-def test_is_model_loaded_returns_false_on_connection_failure():
-    with patch("bashmage.ollama.urllib.request.urlopen", side_effect=URLError("Connection refused")):
-        client = OllamaClient("http://localhost:11434", "llama3.2")
-        assert client.is_model_loaded() is False
-
-
-def test_is_model_loaded_calls_api_ps_endpoint():
-    with patch("bashmage.ollama.urllib.request.urlopen", return_value=_mock_ps_urlopen([])) as mock_open:
-        client = OllamaClient("http://localhost:11434", "llama3.2")
-        client.is_model_loaded()
-    req = mock_open.call_args[0][0]
-    assert req.full_url == "http://localhost:11434/api/ps"
